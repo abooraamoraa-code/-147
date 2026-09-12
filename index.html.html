@@ -1,0 +1,755 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محاكي أناكوندا الاحترافي - الذكاء المرعب</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        body {
+            background-color: #0b0f19;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+        canvas {
+            display: block;
+            background: #111827;
+            cursor: crosshair;
+        }
+        #leaderboard {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(17, 24, 39, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            width: 220px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            z-index: 10;
+        }
+        #leaderboard h3 {
+            font-size: 1rem;
+            color: #38bdf8;
+            margin-bottom: 10px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 5px;
+        }
+        .lb-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+            color: #cbd5e1;
+        }
+        .lb-item span:last-child {
+            font-weight: bold;
+            color: #facc15;
+        }
+        #hud {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(17, 24, 39, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-size: 0.95rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+        #hud div {
+            margin-bottom: 4px;
+        }
+        #hud span {
+            color: #4ade80;
+            font-weight: bold;
+        }
+        #active-potions {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(17, 24, 39, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px 18px;
+            font-size: 0.85rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .potion-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: bold;
+            text-align: center;
+        }
+        #menu-overlay, #gameover-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(11, 15, 25, 0.92);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        #gameover-overlay {
+            display: none;
+        }
+        .menu-box {
+            background: #1f2937;
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid #374151;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            width: 380px;
+        }
+        .menu-box h1 {
+            color: #f59e0b;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        .menu-box input {
+            width: 100%;
+            padding: 12px;
+            background: #111827;
+            border: 1px solid #4b5563;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            text-align: center;
+            outline: none;
+        }
+        .menu-box button {
+            width: 100%;
+            padding: 12px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .menu-box button:hover {
+            background: #1d4ed8;
+        }
+        .gameover-box {
+            background: #1f2937;
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid #ef4444;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            width: 380px;
+        }
+        .gameover-box h1 {
+            color: #ef4444;
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+        .gameover-box p {
+            color: #cbd5e1;
+            margin-bottom: 20px;
+            font-size: 1rem;
+        }
+        .gameover-box button {
+            width: 100%;
+            padding: 12px;
+            background: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .gameover-box button:hover {
+            background: #b91c1c;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="menu-overlay">
+        <div class="menu-box">
+            <h1>🐍 أناكوندا الذكاء المرعب</h1>
+            <input type="text" id="playerNameInput" placeholder="أدخل اسم دورتك..." value="أبو العز" maxlength="15">
+            <button id="startBtn">دخول ساحة الرعب</button>
+        </div>
+    </div>
+
+    <div id="gameover-overlay">
+        <div class="gameover-box">
+            <h1>💥 انتهت الجولة!</h1>
+            <p>لقد التهمك أحدهم أو اصطدمت بالجدار.</p>
+            <button id="restartBtn">العودة للساحة</button>
+        </div>
+    </div>
+
+    <div id="leaderboard">
+        <h3>🏆 لوحة الشرف</h3>
+        <div id="lbList"></div>
+    </div>
+
+    <div id="active-potions">
+        <div style="color: #38bdf8; font-weight: bold; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom:4px;">🧪 الجرعات النشطة</div>
+        <div id="potionsList">لا توجد جرعات نشطة</div>
+    </div>
+
+    <div id="hud">
+        <div>الكتلة/النقاط: <span id="scoreVal">20</span></div>
+        <div>المنافسون بالساحة: <span id="botsCountVal">0</span></div>
+        <div>الحالة: <span id="boostVal">عادية</span></div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const WORLD_WIDTH = 4000;
+        const WORLD_HEIGHT = 4000;
+
+        let gameStarted = false;
+        let isGameOver = false;
+        let mouseX = canvas.width / 2;
+        let mouseY = canvas.height / 2;
+
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        let isBoosting = false;
+        window.addEventListener('mousedown', (e) => { if(e.button === 0) isBoosting = true; });
+        window.addEventListener('mouseup', (e) => { if(e.button === 0) isBoosting = false; });
+        window.addEventListener('keydown', (e) => { if(e.code === 'Space') isBoosting = true; });
+        window.addEventListener('keyup', (e) => { if(e.code === 'Space') isBoosting = false; });
+
+        let foods = [];
+        
+        function spawnFood(x, y, forcedType = null) {
+            let fX = x || (Math.random() * (WORLD_WIDTH - 200) + 100);
+            let fY = y || (Math.random() * (WORLD_HEIGHT - 200) + 100);
+            
+            let type = forcedType;
+            if (!type) {
+                let rand = Math.random();
+                if (rand < 0.45) type = 'candy';
+                else if (rand < 0.80) type = 'cake';
+                else if (rand < 0.84) type = 'potion_speed';
+                else if (rand < 0.88) type = 'potion_agility';
+                else if (rand < 0.92) type = 'potion_magnet';
+                else if (rand < 0.95) type = 'potion_growth_light';
+                else if (rand < 0.98) type = 'potion_growth_mid';
+                else type = 'potion_growth_dark';
+            }
+
+            let color = '#ff4757';
+            let radius = 6;
+            let value = 1;
+
+            if (type === 'candy') {
+                const colors = ['#ff4757', '#2ed573', '#ffa502', '#3742fa', '#ff6b81', '#70a1ff', '#eccc68'];
+                color = colors[Math.floor(Math.random() * colors.length)];
+                radius = 6;
+                value = 1;
+            } else if (type === 'cake') {
+                color = '#8b4513';
+                radius = 9;
+                value = 3;
+            } else if (type === 'potion_speed') {
+                color = '#22c55e';
+                radius = 11;
+                value = 2;
+            } else if (type === 'potion_agility') {
+                color = '#3b82f6';
+                radius = 11;
+                value = 2;
+            } else if (type === 'potion_magnet') {
+                color = '#ec4899';
+                radius = 11;
+                value = 2;
+            } else if (type === 'potion_growth_light') {
+                color = '#fdba74';
+                radius = 12;
+                value = 4;
+            } else if (type === 'potion_growth_mid') {
+                color = '#f97316';
+                radius = 13;
+                value = 6;
+            } else if (type === 'potion_growth_dark') {
+                color = '#c2410c';
+                radius = 14;
+                value = 10;
+            }
+
+            return { x: fX, y: fY, radius, color, type, value };
+        }
+
+        // كمية الطعام (مع الحفاظ على تقليل الطعام السابق 375 قطعة)
+        for(let i=0; i<375; i++) {
+            foods.push(spawnFood());
+        }
+
+        class Snake {
+            constructor(name, x, y, isPlayer = false, color = '#ffcc00') {
+                this.name = name;
+                this.isPlayer = isPlayer;
+                this.color = color;
+                this.angle = 0;
+                this.baseSpeed = 2.7; // زيادة السرعة بنسبة 20% (من 2.25 إلى 2.7)
+                this.baseBoostSpeed = 5.1;
+                this.score = 20;
+                this.segments = [];
+                
+                this.potions = {
+                    speedTimer: 0,
+                    agilityTimer: 0,
+                    magnetTimer: 0,
+                    growthMultiplier: 1,
+                    growthTimer: 0
+                };
+                
+                // متغيرات الذكاء الاصطناعي للمنافسين
+                this.aiTargetFood = null;
+                this.aiState = 'WANDERING'; // WANDERING, HUNTING_FOOD, EVADING
+                this.aiBoostTimer = 0;
+
+                let segCount = 35;
+                for(let i=0; i<segCount; i++) {
+                    this.segments.push({x: x - (i * 4), y: y});
+                }
+            }
+
+            getRadius() {
+                let r = 12 + Math.sqrt(this.score) * 0.8;
+                return Math.min(r, 32);
+            }
+
+            update(allSnakes) {
+                if (this.potions.speedTimer > 0) this.potions.speedTimer--;
+                if (this.potions.agilityTimer > 0) this.potions.agilityTimer--;
+                if (this.potions.magnetTimer > 0) this.potions.magnetTimer--;
+                if (this.potions.growthTimer > 0) {
+                    this.potions.growthTimer--;
+                    if (this.potions.growthTimer === 0) this.potions.growthMultiplier = 1;
+                }
+
+                if (this.isPlayer) {
+                    let targetAngle = Math.atan2(mouseY - canvas.height/2, mouseX - canvas.width/2);
+                    let angleDiff = targetAngle - this.angle;
+                    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+                    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+                    
+                    let turnRate = this.potions.agilityTimer > 0 ? 0.18 : 0.11;
+                    this.angle += angleDiff * turnRate;
+                } else {
+                    // ذكاء اصطناعي تفاعلي مرعب ومتطور للمنافسين
+                    let head = this.segments[0];
+                    
+                    // 1. فحص الهروب من الاصطدام بالآخرين أو الجدران
+                    let dangerAngle = null;
+                    let minDangerDist = 120;
+
+                    for(let s of allSnakes) {
+                        if(s === this) continue;
+                        // فحص الاقتراب من رؤوس وأجسام المنافسين
+                        for(let k = 0; k < s.segments.length; k += 2) {
+                            let seg = s.segments[k];
+                            let dist = Math.hypot(head.x - seg.x, head.y - seg.y);
+                            if(dist < minDangerDist) {
+                                dangerAngle = Math.atan2(head.y - seg.y, head.x - seg.x);
+                                break;
+                            }
+                        }
+                        if(dangerAngle !== null) break;
+                    }
+
+                    // فحص حدود الخريطة
+                    if (head.x < 300) dangerAngle = 0;
+                    if (head.x > WORLD_WIDTH - 300) dangerAngle = Math.PI;
+                    if (head.y < 300) dangerAngle = Math.PI / 2;
+                    if (head.y > WORLD_HEIGHT - 300) dangerAngle = -Math.PI / 2;
+
+                    if (dangerAngle !== null) {
+                        // تفادي مرعب وسريع
+                        this.angle = dangerAngle + (Math.random() - 0.5) * 0.5;
+                        if(this.score > 15 && Math.random() < 0.3) this.aiBoostTimer = 30; // اندفاع طارئ للهروب
+                    } else {
+                        // 2. البحث عن الطعام القريب وتناوله بذكاء
+                        let closestFood = null;
+                        let minDist = 300;
+                        for(let f of foods) {
+                            let dist = Math.hypot(head.x - f.x, head.y - f.y);
+                            if(dist < minDist) {
+                                minDist = dist;
+                                closestFood = f;
+                            }
+                        }
+
+                        if(closestFood) {
+                            let targetAngle = Math.atan2(closestFood.y - head.y, closestFood.x - head.x);
+                            let angleDiff = targetAngle - this.angle;
+                            while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+                            while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+                            this.angle += angleDiff * 0.12;
+
+                            // سرعة وتفاعل عند وجود طعام قريب
+                            if(minDist < 150 && this.score > 15 && Math.random() < 0.15) {
+                                this.aiBoostTimer = 20;
+                            }
+                        } else {
+                            this.angle += (Math.random() - 0.5) * 0.25;
+                        }
+                    }
+                }
+
+                let currentSpd = this.baseSpeed;
+                if (this.potions.speedTimer > 0) currentSpd *= 1.4;
+
+                let activeBoost = (isBoosting && this.isPlayer && this.score > 10) || (this.aiBoostTimer > 0 && this.score > 15);
+                if(this.aiBoostTimer > 0) this.aiBoostTimer--;
+
+                if (activeBoost) currentSpd = this.baseBoostSpeed;
+                
+                if (activeBoost && Math.random() < 0.08) {
+                    this.score = Math.max(15, this.score - 1);
+                    foods.push(spawnFood(
+                        this.segments[this.segments.length-1].x + (Math.random()-0.5)*20,
+                        this.segments[this.segments.length-1].y + (Math.random()-0.5)*20,
+                        'candy'
+                    ));
+                }
+
+                let head = {
+                    x: this.segments[0].x + Math.cos(this.angle) * currentSpd,
+                    y: this.segments[0].y + Math.sin(this.angle) * currentSpd
+                };
+
+                this.segments.unshift(head);
+
+                let targetLen = Math.floor(20 + this.score * 1.2);
+                while(this.segments.length > targetLen) {
+                    this.segments.pop();
+                }
+            }
+
+            draw(camX, camY) {
+                let currentRadius = this.getRadius();
+
+                for(let i = this.segments.length - 1; i >= 0; i--) {
+                    let seg = this.segments[i];
+                    let screenX = seg.x - camX;
+                    let screenY = seg.y - camY;
+
+                    if(screenX < -50 || screenX > canvas.width + 50 || screenY < -50 || screenY > canvas.height + 50) continue;
+
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, currentRadius, 0, Math.PI * 2);
+                    ctx.fillStyle = (i === 0) ? '#ffffff' : this.color;
+                    ctx.fill();
+                    ctx.lineWidth = 2.5;
+                    ctx.strokeStyle = '#000000';
+                    ctx.stroke();
+
+                    if(i === 0) {
+                        let eyeDist = currentRadius * 0.6;
+                        let eyeOffsetX1 = Math.cos(this.angle + 0.5) * eyeDist;
+                        let eyeOffsetY1 = Math.sin(this.angle + 0.5) * eyeDist;
+                        let eyeOffsetX2 = Math.cos(this.angle - 0.5) * eyeDist;
+                        let eyeOffsetY2 = Math.sin(this.angle - 0.5) * eyeDist;
+
+                        ctx.fillStyle = '#000';
+                        ctx.beginPath();
+                        ctx.arc(screenX + eyeOffsetX1, screenY + eyeOffsetY1, Math.max(3, currentRadius * 0.25), 0, Math.PI*2);
+                        ctx.arc(screenX + eyeOffsetX2, screenY + eyeOffsetY2, Math.max(3, currentRadius * 0.25), 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                }
+
+                let headScreenX = this.segments[0].x - camX;
+                let headScreenY = this.segments[0].y - camY;
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 13px Segoe UI';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.name, headScreenX, headScreenY - currentRadius - 12);
+            }
+        }
+
+        let player = new Snake("أبو العز", WORLD_WIDTH / 2, WORLD_HEIGHT / 2, true, '#38bdf8');
+        let bots = [];
+        const botNames = ['فايبر المرعب', 'كوبرا الدموية', 'بايثون الليل', 'تايبان السريع', 'أناكوندا الغضب', 'فايتور', 'مفترس', 'رعد', 'برق', 'صقر'];
+
+        // تقليل 30% من عدد المنافسين بناءً على الطلب (تخفيض العد إلى حوالي 50-70 منافس بدلاً من 100)
+        const dynamicBotsCount = Math.floor(Math.random() * 21) + 50; 
+        document.getElementById('botsCountVal').innerText = dynamicBotsCount;
+
+        for(let i=0; i<dynamicBotsCount; i++) {
+            bots.push(new Snake(
+                botNames[i % botNames.length] + ' ' + (i+1),
+                Math.random() * (WORLD_WIDTH - 600) + 300,
+                Math.random() * (WORLD_HEIGHT - 600) + 300,
+                false,
+                ['#ff4757', '#2ed573', '#ffa502', '#3742fa', '#ff6b81', '#a855f7', '#06b6d4'][i % 7]
+            ));
+        }
+
+        document.getElementById('startBtn').addEventListener('click', () => {
+            let nameInput = document.getElementById('playerNameInput').value.trim();
+            if(nameInput) player.name = nameInput;
+            document.getElementById('menu-overlay').style.display = 'none';
+            gameStarted = true;
+        });
+
+        document.getElementById('restartBtn').addEventListener('click', () => {
+            resetGame();
+            document.getElementById('gameover-overlay').style.display = 'none';
+            gameStarted = true;
+        });
+
+        function killSnakeAndScatterFood(snakeObj) {
+            // بقايا المنافسين الضخمة عند القضاء عليهم
+            snakeObj.segments.forEach((seg, idx) => {
+                if (idx % 2 === 0) {
+                    foods.push(spawnFood(seg.x + (Math.random()-0.5)*30, seg.y + (Math.random()-0.5)*30, Math.random() < 0.6 ? 'cake' : 'candy'));
+                }
+            });
+            snakeObj.score = 20;
+            let rx = Math.random() * (WORLD_WIDTH - 800) + 400;
+            let ry = Math.random() * (WORLD_HEIGHT - 800) + 400;
+            snakeObj.segments = [];
+            for(let i=0; i<35; i++) {
+                snakeObj.segments.push({x: rx - (i * 4), y: ry});
+            }
+        }
+
+        function gameLoop() {
+            if (gameStarted && !isGameOver) {
+                let allSnakes = [player, ...bots];
+
+                player.update(allSnakes);
+                bots.forEach(bot => bot.update(allSnakes));
+
+                foods.forEach((food, index) => {
+                    let head = player.segments[0];
+                    let distToPlayer = Math.hypot(head.x - food.x, head.y - food.y);
+
+                    let magnetRange = player.potions.magnetTimer > 0 ? 250 : 0;
+                    if ((distToPlayer < 140 && isBoosting) || (magnetRange > 0 && distToPlayer < magnetRange)) {
+                        food.x += (head.x - food.x) * 0.15;
+                        food.y += (head.y - food.y) * 0.15;
+                    }
+
+                    if (distToPlayer < player.getRadius() + food.radius) {
+                        applyFoodToSnake(player, food);
+                        foods[index] = spawnFood();
+                    }
+
+                    bots.forEach(bot => {
+                        let bHead = bot.segments[0];
+                        let distToBot = Math.hypot(bHead.x - food.x, bHead.y - food.y);
+                        if (distToBot < bot.getRadius() + food.radius) {
+                            applyFoodToSnake(bot, food);
+                            foods[index] = spawnFood();
+                        }
+                    });
+                });
+
+                let pHead = player.segments[0];
+                if (pHead.x <= 0 || pHead.x >= WORLD_WIDTH || pHead.y <= 0 || pHead.y >= WORLD_HEIGHT) {
+                    isGameOver = true;
+                    document.getElementById('gameover-overlay').style.display = 'flex';
+                }
+
+                // فحص التصادم والقتل بين الديدان
+                for (let i = 0; i < allSnakes.length; i++) {
+                    let currentSnake = allSnakes[i];
+                    let head = currentSnake.segments[0];
+                    let headRadius = currentSnake.getRadius();
+
+                    for (let j = 0; j < allSnakes.length; j++) {
+                        if (i === j) continue;
+
+                        let targetSnake = allSnakes[j];
+                        for (let k = 5; k < targetSnake.segments.length; k++) {
+                            let seg = targetSnake.segments[k];
+                            let dist = Math.hypot(head.x - seg.x, head.y - seg.y);
+
+                            if (dist < headRadius + targetSnake.getRadius() * 0.7) {
+                                if (currentSnake.isPlayer) {
+                                    isGameOver = true;
+                                    document.getElementById('gameover-overlay').style.display = 'flex';
+                                } else {
+                                    killSnakeAndScatterFood(currentSnake);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                updateLeaderboard();
+                updatePotionsUI();
+            }
+
+            let camX = player.segments[0].x - canvas.width / 2;
+            let camY = player.segments[0].y - canvas.height / 2;
+
+            ctx.fillStyle = '#0b0f19';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            drawGrid(camX, camY);
+            drawWorldBorder(camX, camY);
+            drawFoods(camX, camY);
+
+            bots.forEach(bot => bot.draw(camX, camY));
+            player.draw(camX, camY);
+
+            document.getElementById('scoreVal').innerText = player.score;
+            document.getElementById('boostVal').innerText = isBoosting ? "سرعة دفع 🔥" : "عادية ⚡";
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function applyFoodToSnake(snake, food) {
+            let addScore = food.value;
+            
+            if (food.type === 'potion_speed') {
+                snake.potions.speedTimer = 900;
+            } else if (food.type === 'potion_agility') {
+                snake.potions.agilityTimer = 1200;
+            } else if (food.type === 'potion_magnet') {
+                snake.potions.magnetTimer = 1500;
+            } else if (food.type === 'potion_growth_light') {
+                snake.potions.growthMultiplier = 2;
+                snake.potions.growthTimer = 1200;
+            } else if (food.type === 'potion_growth_mid') {
+                snake.potions.growthMultiplier = 5;
+                snake.potions.growthTimer = 1200;
+            } else if (food.type === 'potion_growth_dark') {
+                snake.potions.growthMultiplier = 10;
+                snake.potions.growthTimer = 1200;
+            }
+
+            addScore *= snake.potions.growthMultiplier;
+            snake.score += addScore;
+        }
+
+        function updatePotionsUI() {
+            let listHTML = '';
+            let p = player.potions;
+            
+            if (p.speedTimer > 0) listHTML += `<div class="potion-badge" style="background: rgba(34,197,94,0.3); color: #4ade80;">سرعة خارقة (${Math.ceil(p.speedTimer/60)}ث)</div>`;
+            if (p.agilityTimer > 0) listHTML += `<div class="potion-badge" style="background: rgba(59,130,246,0.3); color: #60a5fa;">مرونة عالية (${Math.ceil(p.agilityTimer/60)}ث)</div>`;
+            if (p.magnetTimer > 0) listHTML += `<div class="potion-badge" style="background: rgba(236,72,153,0.3); color: #f472b6;">مغناطيس طعام (${Math.ceil(p.magnetTimer/60)}ث)</div>`;
+            if (p.growthTimer > 0) listHTML += `<div class="potion-badge" style="background: rgba(249,115,22,0.3); color: #fb923c;">هرمون نمو x${p.growthMultiplier} (${Math.ceil(p.growthTimer/60)}ث)</div>`;
+
+            if (listHTML === '') listHTML = '<span style="color: #64748b; font-size: 0.8rem;">لا توجد جرعات نشطة</span>';
+            document.getElementById('potionsList').innerHTML = listHTML;
+        }
+
+        function drawGrid(camX, camY) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
+            let gridSize = 60;
+            let startX = -(camX % gridSize);
+            let startY = -(camY % gridSize);
+
+            for (let x = startX; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = startY; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+
+        function drawWorldBorder(camX, camY) {
+            let screenX = 0 - camX;
+            let screenY = 0 - camY;
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 8;
+            ctx.strokeRect(screenX, screenY, WORLD_WIDTH, WORLD_HEIGHT);
+        }
+
+        function drawFoods(camX, camY) {
+            foods.forEach(food => {
+                let screenX = food.x - camX;
+                let screenY = food.y - camY;
+
+                if (screenX >= -20 && screenX <= canvas.width + 20 && screenY >= -20 && screenY <= canvas.height + 20) {
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, food.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = food.color;
+                    ctx.shadowColor = food.color;
+                    ctx.shadowBlur = food.type.includes('potion') ? 12 : 6;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+            });
+        }
+
+        function updateLeaderboard() {
+            let allPlayers = [{ name: player.name, score: player.score }];
+            bots.forEach(b => allPlayers.push({ name: b.name, score: b.score }));
+
+            allPlayers.sort((a, b) => b.score - a.score);
+
+            let lbHtml = '';
+            for (let i = 0; i < Math.min(5, allPlayers.length); i++) {
+                lbHtml += `<div class="lb-item"><span>${i+1}. ${allPlayers[i].name}</span><span>${allPlayers[i].score}</span></div>`;
+            }
+            document.getElementById('lbList').innerHTML = lbHtml;
+        }
+
+        function resetGame() {
+            player.score = 20;
+            isGameOver = false;
+            player.potions = { speedTimer: 0, agilityTimer: 0, magnetTimer: 0, growthMultiplier: 1, growthTimer: 0 };
+            let rx = WORLD_WIDTH / 2;
+            let ry = WORLD_HEIGHT / 2;
+            player.segments = [];
+            for(let i=0; i<35; i++) {
+                player.segments.push({x: rx - (i * 4), y: ry});
+            }
+        }
+
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
